@@ -1,0 +1,475 @@
+.cgShell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  background: var(--bg);
+}
+
+.cgSidebar {
+  border-right: 1px solid var(--stroke);
+  background: #f3f6fb;
+  padding: 12px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cgSidebarTop {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cgBrand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid var(--stroke);
+}
+
+.cgBrandDot {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(156, 205, 251, 0.55), rgba(156, 205, 251, 0.25));
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  position: relative;
+}
+
+.cgBrandDot::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 6px;
+  background: var(--brand-sun);
+}
+
+.cgBrandName {
+  font-weight: 750;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+}
+
+.cgBrandSub {
+  font-size: 12px;
+  color: var(--text-subtle);
+  margin-top: 2px;
+}
+
+.cgSidebarButtons {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.cgBtn {
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 10px 10px;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.cgBtn:hover {
+  border-color: var(--stroke-strong);
+}
+
+.cgBtn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.cgIconBtn {
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: #ffffff;
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.cgIconBtn:hover {
+  border-color: var(--stroke-strong);
+}
+
+.cgIconBtn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.cgIconBtn:disabled,
+.cgBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cgSidebarList {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cgSidebarEmpty {
+  padding: 10px 10px;
+  color: var(--text-subtle);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.cgChatRow {
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 10px;
+  padding: 10px 10px;
+  cursor: pointer;
+}
+
+.cgChatRow:hover {
+  background: rgba(156, 205, 251, 0.14);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+.cgChatRowActive {
+  background: rgba(156, 205, 251, 0.22);
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+.cgChatRow:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.cgChatRowTitle {
+  font-weight: 650;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.cgChatRowMeta {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
+.cgMain {
+  min-width: 0;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.cgTopbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--stroke);
+  background: #ffffff;
+}
+
+.cgTopbarTitle {
+  font-weight: 650;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cgTopbarActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cgTopAction {
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.cgTopAction:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cgTopActionPrimary {
+  background: var(--brand-sun);
+}
+
+.cgThread {
+  overflow: auto;
+  padding: 22px 16px 22px;
+}
+
+.cgThreadInner {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.cgEmptyState {
+  padding: 42px 0 28px;
+  text-align: center;
+}
+
+.cgEmptyTitle {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.cgEmptySub {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.cgMsg {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.cgMsgAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  color: rgba(14, 27, 42, 0.88);
+  background: #ffffff;
+}
+
+.cgMsgAssistant .cgMsgAvatar {
+  background: rgba(156, 205, 251, 0.18);
+}
+
+.cgMsgHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cgMsgRole {
+  font-weight: 750;
+}
+
+.cgMsgMeta {
+  font-size: 12px;
+  color: var(--text-subtle);
+  white-space: nowrap;
+}
+
+.cgMsgContent {
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: rgba(14, 27, 42, 0.94);
+}
+
+.cgMsgText {
+  white-space: pre-wrap;
+}
+
+.cgMsgMarkdown :where(h1, h2, h3) {
+  letter-spacing: -0.01em;
+}
+
+.cgMsgMarkdown h1 {
+  font-size: 20px;
+  margin: 0 0 10px;
+}
+
+.cgMsgMarkdown h2 {
+  font-size: 16px;
+  margin: 18px 0 8px;
+}
+
+.cgMsgMarkdown pre {
+  background: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+  border-radius: 12px;
+  padding: 12px;
+  overflow: auto;
+}
+
+.cgMsgMarkdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 0.92em;
+}
+
+.cgCitations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cgCitation {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: #ffffff;
+  font-size: 12px;
+  color: rgba(14, 27, 42, 0.84);
+}
+
+.cgReportPath {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-subtle);
+  overflow-wrap: anywhere;
+}
+
+.cgError {
+  margin-top: 16px;
+  border: 1px solid rgba(239, 68, 68, 0.22);
+  background: rgba(239, 68, 68, 0.08);
+  color: rgba(127, 29, 29, 0.95);
+  padding: 10px 12px;
+  border-radius: 10px;
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cgComposer {
+  border-top: 1px solid rgba(15, 23, 42, 0.10);
+  background: rgba(245, 247, 251, 0.95);
+  padding: 12px 16px 14px;
+}
+
+.cgComposerInner {
+  max-width: 760px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.cgInput {
+  border: none;
+  outline: none;
+  padding: 10px 10px;
+  font-size: 15px;
+}
+
+.cgSend {
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: var(--brand-sun);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.cgSend:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cgComposerHint {
+  max-width: 760px;
+  margin: 8px auto 0;
+  font-size: 12px;
+  color: var(--text-subtle);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cgSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  display: inline-block;
+}
+
+.cgSwatchSky {
+  background: var(--brand-sky);
+}
+
+.cgSwatchSun {
+  background: var(--brand-sun);
+}
+
+.cgMobileOnly {
+  display: none;
+}
+
+.drawerScrim {
+  display: none;
+}
+
+@media (max-width: 980px) {
+  .cgShell {
+    grid-template-columns: 1fr;
+  }
+
+  .cgSidebar {
+    position: fixed;
+    z-index: 40;
+    left: 12px;
+    top: 12px;
+    bottom: 12px;
+    height: auto;
+    width: min(320px, calc(100vw - 24px));
+    transform: translateX(calc(-100% - 18px));
+    transition: transform 0.18s ease;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(15, 23, 42, 0.14);
+  }
+
+  .cgSidebarOpen {
+    transform: translateX(0);
+  }
+
+  .drawerScrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    background: rgba(14, 27, 42, 0.45);
+  }
+
+  .cgMobileOnly {
+    display: grid;
+  }
+
+  .cgTopbarTitle {
+    max-width: 48vw;
+  }
+}

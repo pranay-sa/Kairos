@@ -1,5 +1,11 @@
 # KAIROS — AI incident investigation (MVP)
 
+Designed to reduce downtime in complex production systems.
+It continuously ingests and understands company-wide context from logs, Jira, Slack, Teams, and codebases.
+Using this unified knowledge, it autonomously investigates failures, traces root causes, and provides evidence-backed insights.
+Engineers can interact via a chat interface to quickly diagnose issues and take action, including automated PR generation for fixes.
+
+
 Manual mode: a React chat UI sends natural-language issues to a FastAPI backend. The backend retrieves **Qdrant** vectors + **Neo4j** graph context, then runs a **LangGraph** flow and a **grounded** OpenAI chat model. If retrieval confidence is below the threshold (or nothing is retrieved), the model is bypassed and the API returns **“Insufficient data”** / **“No sufficient evidence found”** style content.
 
 ## Prerequisites
@@ -117,26 +123,3 @@ The React UI exposes **Review & Raise PR** (opens the PR in a new tab when succe
 3. For REST/API scripts, create an Atlassian API token from your Atlassian account (not required for the webhook ingest path).
 
 ---
-
-## Folder layout
-
-```
-backend/
-  main.py
-  config.py
-  routes/        # investigate, ingest, webhooks, pr
-  services/      # qdrant, neo4j, embeddings, llm
-  ingestion/     # codebase chunker
-  rag/           # LangGraph investigation graph
-  graph/         # schema notes
-  reports/       # generated Markdown
-frontend/
-  src/           # React UI
-docker-compose.yml
-```
-
-## Troubleshooting
-
-- **`OPENAI_API_KEY is not set`**: configure `backend/.env`.
-- **Qdrant / Neo4j connection errors**: ensure Docker containers are up and `QDRANT_URL` / `NEO4J_*` match.
-- **Empty investigations**: ingest data first; without vectors, the service returns **Insufficient data**.

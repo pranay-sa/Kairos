@@ -7,16 +7,5 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage
 
-  neo4j:
-    image: neo4j:5.26-community
-    ports:
-      - "7474:7474"
-      - "7687:7687"
-    environment:
-      NEO4J_AUTH: neo4j/kairos-neo4j-pass
-    volumes:
-      - neo4j_data:/data
-
 volumes:
   qdrant_data:
-  neo4j_data:

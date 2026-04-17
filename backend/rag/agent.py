@@ -5,7 +5,6 @@ from langgraph.graph import END, StateGraph
 from config import settings
 from services.embedding_service import embed_query
 from services.llm_service import generate_report
-from services.neo4j_service import neo4j_service
 from services.qdrant_service import qdrant_service
 
 
@@ -29,10 +28,22 @@ def _service_hints(hits: list[dict]) -> list[str]:
     return names[:12]
 
 
+def _chat_hints(hits: list[dict]) -> list[str]:
+    chats: list[str] = []
+    for h in hits:
+        if (h.get("source") or "") != "teams":
+            continue
+        svc = (h.get("service") or "").strip()
+        if svc.startswith("teams_chat:"):
+            cid = svc.split("teams_chat:", 1)[1].strip()
+            if cid and cid not in chats:
+                chats.append(cid)
+    return chats[:8]
+
+
 class AgentState(TypedDict):
     query: str
     vector_hits: list[dict]
-    graph_summary: str
     confidence: float
     markdown: str
     insufficient_data: bool
@@ -41,17 +52,14 @@ class AgentState(TypedDict):
 async def node_vector(state: AgentState) -> dict:
     q = state["query"]
     vec = await embed_query(q)
-    hits = await qdrant_service.search(vec, settings.vector_top_k)
+    try:
+        hits = await qdrant_service.search(vec, settings.vector_top_k)
+    except Exception as exc:
+        # Degrade gracefully when Qdrant is unavailable/misconfigured.
+        print(f"[kairos] Qdrant search warning: {exc}")
+        hits = []
     conf = _confidence_from_hits(hits)
     return {"vector_hits": hits, "confidence": conf}
-
-
-async def node_graph(state: AgentState) -> dict:
-    hints = _service_hints(state["vector_hits"])
-    if not hints:
-        return {"graph_summary": ""}
-    ctx = neo4j_service.query_context_for_services(hints, limit=40)
-    return {"graph_summary": ctx.get("summary", "")}
 
 
 async def node_validate(state: AgentState) -> dict:
@@ -80,7 +88,7 @@ No sufficient evidence found in retrieved data.
 async def node_generate(state: AgentState) -> dict:
     if state.get("insufficient_data"):
         return {}
-    md = await generate_report(state["query"], state["vector_hits"], state["graph_summary"])
+    md = await generate_report(state["query"], state["vector_hits"])
     return {"markdown": md}
 
 
@@ -91,13 +99,11 @@ def _route_after_validate(state: AgentState) -> str:
 def build_graph():
     g = StateGraph(AgentState)
     g.add_node("retrieve_vector", node_vector)
-    g.add_node("retrieve_graph", node_graph)
     g.add_node("validate", node_validate)
     g.add_node("generate", node_generate)
 
     g.set_entry_point("retrieve_vector")
-    g.add_edge("retrieve_vector", "retrieve_graph")
-    g.add_edge("retrieve_graph", "validate")
+    g.add_edge("retrieve_vector", "validate")
     g.add_conditional_edges("validate", _route_after_validate, {"end": END, "generate": "generate"})
     g.add_edge("generate", END)
     return g.compile()
@@ -110,7 +116,6 @@ async def run_investigation(query: str) -> dict:
     initial: AgentState = {
         "query": query,
         "vector_hits": [],
-        "graph_summary": "",
         "confidence": 0.0,
         "markdown": "",
         "insufficient_data": False,
@@ -121,5 +126,4 @@ async def run_investigation(query: str) -> dict:
         "confidence_score": float(out.get("confidence", 0.0)),
         "insufficient_data": bool(out.get("insufficient_data", False)),
         "vector_hits": out.get("vector_hits", []),
-        "graph_summary": out.get("graph_summary", ""),
     }

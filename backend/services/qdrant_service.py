@@ -74,6 +74,7 @@ class QdrantService:
                     "source": p.get("source", "unknown"),
                     "service": p.get("service", ""),
                     "severity": p.get("severity"),
+                    "external_id": p.get("external_id"),
                     "file_path": p.get("file_path"),
                     "function_name": p.get("function_name"),
                     "line_start": line,

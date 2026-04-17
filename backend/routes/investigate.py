@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter
+from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
 from rag.agent import run_investigation
@@ -28,16 +29,59 @@ def _related_from_hits(hits: list[dict]) -> list[dict]:
         text = (h.get("text") or "").strip().replace("\n", " ")
         title = text[:160] + ("…" if len(text) > 160 else "")
         line = h.get("line_start") or h.get("line") or 0
+        src = (h.get("source") or "unknown").strip()
+        ext = (h.get("external_id") or "").strip()
+        if src.lower() == "jira" and ext:
+            label = f"jira {ext}"
+        else:
+            label = f"{src} : line {line}"
         out.append(
             {
                 "title": title or "(empty chunk)",
-                "source": h.get("source", "unknown"),
+                "source": src,
                 "line": line,
                 "link": h.get("link") or "",
-                "citation_label": f"{h.get('source', 'source')} : line {line}",
+                "citation_label": label,
             }
         )
     return out
+
+
+_SOURCE_LIST_RE = re.compile(r"\[(\s*SOURCE\s*\d+(?:\s*,\s*SOURCE\s*\d+)*)\s*\]", re.IGNORECASE)
+_SOURCE_NUM_RE = re.compile(r"SOURCE\s*(\d+)", re.IGNORECASE)
+
+
+def _decorate_sources(md: str, hits: list[dict]) -> str:
+    """
+    Convert LLM placeholders like [SOURCE 1] or [SOURCE 2, SOURCE 3]
+    into clickable citations using the retrieved hit metadata (link, source, line).
+    """
+    if not md or not hits:
+        return md or ""
+
+    def cite(n: int) -> str:
+        i = n - 1
+        if i < 0 or i >= len(hits):
+            return f"Source {n}"
+        h = hits[i] or {}
+        src = (h.get("source") or "source").strip()
+        line = h.get("line_start") or h.get("line") or 0
+        link = (h.get("link") or "").strip()
+        ext = (h.get("external_id") or "").strip()
+        if src.lower() == "jira" and ext:
+            label = f"jira {ext}"
+        else:
+            label = f"{src} line {line}".strip()
+        return f"[{label}]({link})" if link else label
+
+    def repl(m: re.Match) -> str:
+        nums = [int(x) for x in _SOURCE_NUM_RE.findall(m.group(1) or "")]
+        if not nums:
+            return m.group(0)
+        return "(" + "; ".join(cite(n) for n in nums) + ")"
+
+    # Turn bracketed SOURCE lists into "(linked citations)".
+    return _SOURCE_LIST_RE.sub(repl, md)
 
 
 class InvestigateRequest(BaseModel):
@@ -60,6 +104,23 @@ _SECTION = re.compile(
     re.DOTALL | re.IGNORECASE,
 )
 
+_RESTART_WORD_RE = re.compile(r"\brestart\b", re.IGNORECASE)
+
+
+def _maybe_add_restart_button(suggested_fix: str) -> str:
+    text = (suggested_fix or "").strip()
+    if not text:
+        return ""
+    if not _RESTART_WORD_RE.search(text):
+        return text
+    if "data-kairos-action=\"restart\"" in text:
+        return text
+    return (
+        text
+        + "\n\n"
+        + '<button type="button" data-kairos-action="restart" class="kairos-restart-btn">Restart</button>'
+    )
+
 
 def _split_sections(md: str) -> dict[str, str]:
     parts: dict[str, str] = {}
@@ -70,16 +131,24 @@ def _split_sections(md: str) -> dict[str, str]:
 
 @router.post("/investigate", response_model=InvestigateResponse)
 async def investigate(body: InvestigateRequest):
-    result = await run_investigation(body.issue)
+    try:
+        result = await run_investigation(body.issue)
+    except RuntimeError as exc:
+        # Common misconfiguration cases (e.g., missing API key) should not show up as a generic 500.
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        # Unexpected failures should still return a clear message to the frontend.
+        raise HTTPException(status_code=503, detail=f"Investigation failed: {exc}") from exc
     md = result["markdown"]
     conf = float(result["confidence_score"])
     insufficient = bool(result["insufficient_data"])
     hits = result.get("vector_hits") or []
+    md = _decorate_sources(md, hits)
 
     parsed = _split_sections(md)
     issue_summary = parsed.get("issue_summary", "")
     root_cause = parsed.get("root_cause_hypothesis", "")
-    suggested = parsed.get("suggested_fix", "")
+    suggested = _maybe_add_restart_button(parsed.get("suggested_fix", ""))
 
     md_conf = _parse_confidence_from_markdown(md)
     if md_conf is not None:

@@ -11,14 +11,11 @@ class Settings(BaseSettings):
 
     # Local embeddings (no API key required)
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    fastembed_cache_dir: str = "data/fastembed_cache"
 
     qdrant_url: str = "http://localhost:6333"
     qdrant_api_key: str | None = None
     qdrant_collection: str = "kairos_documents"
-
-    neo4j_uri: str = "bolt://localhost:7687"
-    neo4j_user: str = "neo4j"
-    neo4j_password: str = "password"
 
     confidence_threshold: float = 0.05
     vector_top_k: int = 8
@@ -30,6 +27,14 @@ class Settings(BaseSettings):
 
     slack_signing_secret: str = ""
     jira_webhook_secret: str = ""
+
+    # Jira (optional) - used for backfill + proper browse links
+    jira_base_url: str = "https://example.atlassian.net"
+    jira_email: str = ""
+    jira_api_token: str = ""
+    jira_backfill_on_startup: bool = False
+    jira_backfill_jql: str = "order by updated desc"
+    jira_backfill_max_issues: int = 200
 
     # Azure Monitor / Log Analytics (optional)
     azure_monitor_enabled: bool = False
@@ -46,6 +51,19 @@ class Settings(BaseSettings):
     azure_log_analytics_query: str = (
         "AppTraces | where TimeGenerated > ago(20m) | project TimeGenerated, SeverityLevel, Message"
     )
+
+    # Microsoft Teams (Graph API) -> Qdrant (optional)
+    teams_sync_enabled: bool = False
+    teams_poll_interval_minutes: int = 10
+    teams_state_path: str = "data/teams_graph_state.json"
+
+    # App Registration (client credentials)
+    ms_tenant_id: str = ""
+    ms_client_id: str = ""
+    ms_client_secret: str = ""
+
+    # Users to sync (comma-separated UPNs or user IDs)
+    teams_user_ids: str = ""
 
 
 settings = Settings()

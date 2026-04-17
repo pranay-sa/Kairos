@@ -9,7 +9,10 @@ RULES (must follow):
 2. If the context does not contain enough evidence to support a claim, state explicitly: "No sufficient evidence found in retrieved data" for that part.
 3. Do not guess root causes or fixes. Hypotheses must be clearly labeled as hypotheses and grounded in cited context.
 4. Every factual statement in Issue Summary and Related Incidents must cite sources using inline tags exactly like: [SOURCE_NAME line N] where N is the line number from the context block (use the "line" field shown per chunk).
-5. If overall evidence is weak or contradictory, keep answers short and conservative.
+5. Stay strictly focused on the USER ISSUE. Ignore retrieved context that is not directly relevant to the specific query.
+6. Do not provide generic best practices, background explanations, or broad troubleshooting checklists unless the retrieved context explicitly mentions them.
+7. Do not infer missing details (owners, timelines, configs, root cause, fix steps). If the query asks for specifics not present in context, say "No sufficient evidence found in retrieved data."
+8. If overall evidence is weak or contradictory, keep answers short and conservative.
 
 Output MUST be valid Markdown with exactly these sections and headings:
 
@@ -48,7 +51,6 @@ def _format_vector_context(chunks: list[dict]) -> str:
 async def generate_report(
     user_issue: str,
     vector_chunks: list[dict],
-    graph_summary: str,
 ) -> str:
     if not settings.groq_api_key:
         raise RuntimeError("GROQ_API_KEY is not set")
@@ -59,9 +61,6 @@ async def generate_report(
 
 RETRIEVED VECTOR CONTEXT:
 {vctx}
-
-NEO4J GRAPH CONTEXT (relationships; may be empty):
-{graph_summary or "(none)"}
 """
     resp = await client.chat.completions.create(
         model=settings.llm_chat_model,

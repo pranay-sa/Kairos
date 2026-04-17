@@ -6,14 +6,14 @@ Using this unified knowledge, it autonomously investigates failures, traces root
 Engineers can interact via a chat interface to quickly diagnose issues and take action, including automated PR generation for fixes.
 
 
-Manual mode: a React chat UI sends natural-language issues to a FastAPI backend. The backend retrieves **Qdrant** vectors + **Neo4j** graph context, then runs a **LangGraph** flow and a **grounded** OpenAI chat model. If retrieval confidence is below the threshold (or nothing is retrieved), the model is bypassed and the API returns **“Insufficient data”** / **“No sufficient evidence found”** style content.
+Manual mode: a React chat UI sends natural-language issues to a FastAPI backend. The backend retrieves **Qdrant** vectors, then runs a **LangGraph** flow and a **grounded** chat model. If retrieval confidence is below the threshold (or nothing is retrieved), the model is bypassed and the API returns **“Insufficient data”** / **“No sufficient evidence found”** style content.
 
 ## Prerequisites
 
 - Python 3.10+
 - Node 18+ (for the frontend)
-- Docker (recommended) for Qdrant + Neo4j
-- OpenAI API key
+- Docker (recommended) for Qdrant
+- Groq API key (OpenAI-compatible) for chat completions
 
 ## 1) Start databases
 
@@ -26,7 +26,6 @@ docker compose up -d
 This starts:
 
 - Qdrant: `http://localhost:6333`
-- Neo4j Browser: `http://localhost:7474` (user `neo4j`, password `kairos-neo4j-pass`)
 
 ## 2) Backend
 
@@ -36,7 +35,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 copy .env.example .env
-# Edit .env — set OPENAI_API_KEY and ensure NEO4J_PASSWORD matches docker-compose (kairos-neo4j-pass)
+# Edit .env — set GROQ_API_KEY
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -45,7 +44,7 @@ Open `http://localhost:8000/docs` for interactive API docs.
 ### Ingest sample evidence (recommended before investigating)
 
 ```powershell
-curl -X POST http://localhost:8000/api/ingest -H "Content-Type: application/json" -d "{\"items\":[{\"text\":\"[payments-api] timeout calling auth-service in prod\",\"source\":\"slack\",\"service\":\"payments-api\",\"severity\":\"high\",\"line_start\":1,\"graph\":{\"service_id\":\"payments-api\",\"depends_from\":\"payments-api\",\"depends_to\":\"auth-service\"}}]}"
+curl -X POST http://localhost:8000/api/ingest -H "Content-Type: application/json" -d "{\"items\":[{\"text\":\"[payments-api] timeout calling auth-service in prod\",\"source\":\"slack\",\"service\":\"payments-api\",\"severity\":\"high\",\"line_start\":1}]}"
 ```
 
 ### Index a codebase folder (optional)
@@ -68,8 +67,8 @@ Open `http://localhost:5173`. The dev server proxies `/api/*` to `http://127.0.0
 
 | Endpoint | Purpose |
 | --- | --- |
-| `POST /api/investigate` | Run manual investigation (RAG + graph + grounded LLM) |
-| `POST /api/ingest` | Upsert documents into Qdrant (+ optional Neo4j graph hints) |
+| `POST /api/investigate` | Run manual investigation (RAG + grounded LLM) |
+| `POST /api/ingest` | Upsert documents into Qdrant |
 | `POST /api/ingest/codebase` | Chunk code files into Qdrant |
 | `POST /api/webhook/slack` | Slack events / generic message ingestion |
 | `POST /api/webhook/teams` | Microsoft Teams payload ingestion |
@@ -80,15 +79,9 @@ Reports are also written under `backend/reports/` as `.md` files on each `/inves
 
 ## Guardrails
 
-- The chat model receives **only** retrieved vector chunks + Neo4j relationship summary.
+- The chat model receives **only** retrieved vector chunks.
 - If **no** vector hits or **confidence &lt; `CONFIDENCE_THRESHOLD`**, the backend returns a fixed **Insufficient data** Markdown report (LLM generation is skipped).
 - System prompt enforces citations like `[SOURCE line N]` mapped to chunk line metadata.
-
-## Neo4j schema (MVP)
-
-**Nodes:** `Service`, `Incident`, `Ticket`, `Message` (unique `id`).
-
-**Relationships:** `SERVICE_DEPENDS_ON`, `CAUSED_BY`, `RELATED_TO`, `REPORTED_IN` (Incident→Ticket), plus `Message`-`RELATED_TO`-`Incident` when provided via ingest graph hints.
 
 ## GitHub PR automation (`/api/create-pr`)
 

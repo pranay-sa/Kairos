@@ -10,7 +10,7 @@ from fastapi import APIRouter, Header, HTTPException, Request
 
 from config import settings
 from routes.ingest import IngestItem
-from services.neo4j_service import neo4j_service
+from routes.ingest import _stable_uuid
 from services.qdrant_service import qdrant_service
 
 router = APIRouter()
@@ -18,6 +18,38 @@ router = APIRouter()
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _adf_to_text(node: Any) -> str:
+    """
+    Jira Cloud often sends description in Atlassian Document Format (ADF).
+    Convert a subset of ADF into plain text for embedding/retrieval.
+    """
+    if node is None:
+        return ""
+    if isinstance(node, str):
+        return node
+    if isinstance(node, (int, float, bool)):
+        return str(node)
+    if isinstance(node, list):
+        parts = [_adf_to_text(x) for x in node]
+        return "\n".join([p for p in parts if p.strip()]).strip()
+    if isinstance(node, dict):
+        # ADF text node
+        if node.get("type") == "text" and isinstance(node.get("text"), str):
+            return node["text"]
+        # Common containers
+        content = node.get("content")
+        if content is not None:
+            return _adf_to_text(content)
+        # Fallback: concatenate any nested values that look like text.
+        parts: list[str] = []
+        for v in node.values():
+            t = _adf_to_text(v)
+            if t.strip():
+                parts.append(t)
+        return "\n".join(parts).strip()
+    return ""
 
 
 async def _ingest_message(
@@ -31,8 +63,6 @@ async def _ingest_message(
     external_id: str | None = None,
 ):
     mid = external_id or str(uuid.uuid4())
-    neo4j_service.upsert_message(mid, channel)
-    neo4j_service.upsert_service(service or "unknown", service or "unknown")
     item = IngestItem(
         text=text,
         timestamp=_now(),
@@ -47,6 +77,7 @@ async def _ingest_message(
         "source": item.source,
         "service": item.service,
         "severity": item.severity,
+        "external_id": str(mid),
         "file_path": None,
         "function_name": None,
         "line_start": 1,
@@ -150,16 +181,13 @@ async def webhook_jira(
     fields = issue.get("fields") or {}
     summary = fields.get("summary") or issue.get("key") or "Jira update"
     desc = fields.get("description")
-    if isinstance(desc, str):
-        text = f"{summary}\n{desc}"
-    else:
-        text = str(summary)
+    desc_text = _adf_to_text(desc)
+    text = f"{summary}\n{desc_text}".strip() if desc_text.strip() else str(summary)
 
     key = issue.get("key") or body.get("issue_key") or str(uuid.uuid4())[:8]
     service = fields.get("project", {}).get("key", "jira") if isinstance(fields.get("project"), dict) else "jira"
-
-    neo4j_service.upsert_ticket(key, key)
-    neo4j_service.upsert_service(service, service)
+    base = (settings.jira_base_url or "").rstrip("/") or "https://example.atlassian.net"
+    browse_link = f"{base}/browse/{key}"
 
     item = IngestItem(
         text=text,
@@ -167,7 +195,7 @@ async def webhook_jira(
         source="jira",
         service=str(service),
         severity=fields.get("priority", {}).get("name") if isinstance(fields.get("priority"), dict) else None,
-        link=f"https://example.atlassian.net/browse/{key}",
+        link=browse_link,
         graph={"ticket_id": key, "service_id": str(service)},
     )
     pl = {
@@ -180,5 +208,6 @@ async def webhook_jira(
         "line_start": 1,
         "link": item.link or "",
     }
-    await qdrant_service.upsert_documents([item.text], [pl])
+    doc_id = _stable_uuid("jira", str(key))
+    await qdrant_service.upsert_documents([item.text], [pl], ids=[doc_id])
     return {"ok": True, "ingested": True}

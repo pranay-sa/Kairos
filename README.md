@@ -1,5 +1,7 @@
 # KAIROS — AI incident investigation 
 
+<img width="3774" height="1825" alt="dd" src="https://github.com/user-attachments/assets/068133be-4b85-4c31-ad05-03ea85594550" />
+
 Designed to reduce downtime in complex production systems.
 It continuously ingests and understands company-wide context from logs, Jira, Slack, Teams, and codebases.
 Using this unified knowledge, it autonomously investigates failures, traces root causes, and provides evidence-backed insights.

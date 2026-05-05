@@ -1,4 +1,4 @@
-# KAIROS — AI incident investigation (MVP)
+# KAIROS — AI incident investigation 
 
 Designed to reduce downtime in complex production systems.
 It continuously ingests and understands company-wide context from logs, Jira, Slack, Teams, and codebases.
@@ -6,7 +6,9 @@ Using this unified knowledge, it autonomously investigates failures, traces root
 Engineers can interact via a chat interface to quickly diagnose issues and take action, including automated PR generation for fixes.
 
 
-Manual mode: a React chat UI sends natural-language issues to a FastAPI backend. The backend retrieves **Qdrant** vectors, then runs a **LangGraph** flow and a **grounded** chat model. If retrieval confidence is below the threshold (or nothing is retrieved), the model is bypassed and the API returns **“Insufficient data”** / **“No sufficient evidence found”** style content.
+Manual mode: a React chat UI sends natural language issues to a FastAPI backend. The backend retrieves **Qdrant** vectors, then runs a **LangGraph** flow and a **grounded** chat model. If retrieval confidence is below the threshold (or nothing is retrieved), the model is bypassed and the API returns **“Insufficient data”** / **“No sufficient evidence found”** style content.
+
+Auto  Mode  : ingests logs from azure and automatically performs diagnostics to give suggested fixes
 
 ## Prerequisites
 
